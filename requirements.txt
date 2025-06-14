@@ -1,0 +1,26 @@
+# Core async libraries
+aiohttp>=3.9.0
+aiofiles>=23.2.0
+asyncio-throttle>=1.0.2
+python-dotenv>=1.0.0
+
+# Discord integration
+discord.py>=2.3.2
+
+# Telegram bot
+python-telegram-bot>=20.7
+
+# Trading and exchange
+ccxt>=4.1.0
+
+# Data processing and analysis
+psutil>=5.9.6
+
+# Testing
+pytest>=7.4.3
+pytest-asyncio>=0.21.1
+
+# Development and type checking
+mypy>=1.7.0
+black>=23.11.0
+isort>=5.12.0
