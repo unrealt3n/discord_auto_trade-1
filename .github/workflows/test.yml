@@ -1,0 +1,75 @@
+name: Test Bot Components
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio
+    
+    - name: Create test environment
+      run: |
+        echo "DISCORD_TOKEN=test_token" >> .env
+        echo "BINANCE_TESTNET_API_KEY=test_key" >> .env
+        echo "BINANCE_TESTNET_API_SECRET=test_secret" >> .env
+        echo "GEMINI_API_KEY=test_gemini" >> .env
+        echo "MONITORED_CHANNEL_IDS=123456789" >> .env
+    
+    - name: Run compatibility tests
+      run: |
+        python test_http_compatibility.py
+    
+    - name: Test imports
+      run: |
+        python -c "
+        import sys
+        try:
+            from main_http import TradingBotHTTP
+            from discord_http_client import SimpleDiscordClient
+            from exchange_http_client import ExchangeClient
+            from signal_parser_http import SignalParserHTTP
+            print('✅ All imports successful')
+        except Exception as e:
+            print(f'❌ Import test failed: {e}')
+            sys.exit(1)
+        "
+    
+    - name: Validate configuration
+      run: |
+        python -c "
+        import json
+        import sys
+        try:
+            with open('config.json') as f:
+                config = json.load(f)
+            required_keys = ['mode', 'authorized_users', 'discord_channels']
+            for key in required_keys:
+                if key not in config:
+                    raise ValueError(f'Missing required config key: {key}')
+            print('✅ Configuration validation passed')
+        except Exception as e:
+            print(f'❌ Configuration validation failed: {e}')
+            sys.exit(1)
+        "

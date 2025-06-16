@@ -1,26 +1,18 @@
-# Core async libraries
-aiohttp>=3.9.0
-aiofiles>=23.2.0
-asyncio-throttle>=1.0.2
+# Essential libraries for Termux compatibility
+# All libraries are pure Python or have minimal C dependencies
+
+# Core dependencies
 python-dotenv>=1.0.0
+requests>=2.28.0
 
-# Discord integration
-discord.py>=2.3.2
+# Optional: File operations (pure Python alternative to aiofiles)
+# aiofiles>=23.2.0  # Can be removed if not needed
 
-# Telegram bot
-python-telegram-bot>=20.7
+# Optional: Async throttling (pure Python)
+asyncio-throttle>=1.0.2
 
-# Trading and exchange
-ccxt>=4.1.0
-
-# Data processing and analysis
-psutil>=5.9.6
-
-# Testing
+# Optional: Testing (pure Python)
 pytest>=7.4.3
-pytest-asyncio>=0.21.1
 
-# Development and type checking
-mypy>=1.7.0
-black>=23.11.0
-isort>=5.12.0
+# Note: All Discord, exchange, and system monitoring functionality
+# is now implemented using pure HTTP requests and built-in libraries

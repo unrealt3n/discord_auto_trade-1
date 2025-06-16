@@ -5,7 +5,24 @@ Monitors execution times, memory usage, and API call statistics
 
 import asyncio
 import time
-import psutil
+try:
+    import psutil
+except ImportError:
+    # Use lightweight replacement for Termux compatibility
+    from system_info import cpu_percent, virtual_memory, boot_time
+    
+    class psutil:
+        @staticmethod
+        def cpu_percent():
+            return cpu_percent()
+        
+        @staticmethod
+        def virtual_memory():
+            return virtual_memory()
+        
+        @staticmethod
+        def boot_time():
+            return boot_time()
 import json
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta

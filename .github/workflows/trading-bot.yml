@@ -1,0 +1,133 @@
+name: Discord Trading Bot
+
+on:
+  # Run on every push to main branch
+  push:
+    branches: [ main ]
+  
+  # Run on pull requests
+  pull_request:
+    branches: [ main ]
+  
+  # Allow manual trigger
+  workflow_dispatch:
+  
+  # Schedule to run continuously (restart every 6 hours to avoid timeouts)
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+
+jobs:
+  trading-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360  # 6 hours maximum
+    
+    strategy:
+      matrix:
+        python-version: [3.11]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Create .env file from secrets
+      run: |
+        echo "DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }}" >> .env
+        echo "BINANCE_TESTNET_API_KEY=${{ secrets.BINANCE_TESTNET_API_KEY }}" >> .env
+        echo "BINANCE_TESTNET_API_SECRET=${{ secrets.BINANCE_TESTNET_API_SECRET }}" >> .env
+        echo "BINANCE_API_KEY=${{ secrets.BINANCE_API_KEY }}" >> .env
+        echo "BINANCE_API_SECRET=${{ secrets.BINANCE_API_SECRET }}" >> .env
+        echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+        echo "MONITORED_CHANNEL_IDS=${{ secrets.MONITORED_CHANNEL_IDS }}" >> .env
+    
+    - name: Verify configuration
+      run: |
+        echo "Checking configuration files..."
+        ls -la
+        [ -f config.json ] && echo "✅ config.json exists" || echo "❌ config.json missing"
+        [ -f .env ] && echo "✅ .env file created" || echo "❌ .env file missing"
+        python -c "import json; print('✅ Config valid') if json.load(open('config.json')) else print('❌ Config invalid')"
+    
+    - name: Test imports
+      run: |
+        echo "Testing Python imports..."
+        python -c "
+        try:
+            from main_http import TradingBotHTTP
+            print('✅ Main bot import successful')
+        except Exception as e:
+            print(f'❌ Import failed: {e}')
+            exit(1)
+        "
+    
+    - name: Run trading bot
+      id: run-bot
+      continue-on-error: true
+      run: |
+        echo "🚀 Starting Discord Trading Bot..."
+        timeout 21600 python main_http.py || true  # 6 hours timeout
+    
+    - name: Upload logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: bot-logs-${{ github.run_number }}
+        path: |
+          *.log
+          logs/
+        retention-days: 7
+    
+    - name: Notify on Discord (Optional)
+      if: always()
+      continue-on-error: true
+      run: |
+        # Send status update to Discord webhook (if configured)
+        if [ ! -z "${{ secrets.DISCORD_WEBHOOK_URL }}" ]; then
+          STATUS="${{ steps.run-bot.outcome }}"
+          COLOR=$([[ "$STATUS" == "success" ]] && echo "3066993" || echo "15158332")
+          
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{
+                 \"embeds\": [{
+                   \"title\": \"🤖 Trading Bot Status\",
+                   \"description\": \"Bot run completed with status: **$STATUS**\",
+                   \"color\": $COLOR,
+                   \"fields\": [
+                     {\"name\": \"Run ID\", \"value\": \"${{ github.run_number }}\", \"inline\": true},
+                     {\"name\": \"Commit\", \"value\": \"${{ github.sha }}\", \"inline\": true},
+                     {\"name\": \"Duration\", \"value\": \"6 hours (restarting)\", \"inline\": true}
+                   ],
+                   \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)\"
+                 }]
+               }" \
+               "${{ secrets.DISCORD_WEBHOOK_URL }}"
+        fi
+
+  # Restart job to run continuously
+  restart-bot:
+    needs: trading-bot
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Trigger restart
+      run: |
+        echo "Bot session completed. Will restart in next scheduled run."
+        echo "GitHub Actions provides continuous operation through scheduled workflows."
