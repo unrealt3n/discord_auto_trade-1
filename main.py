@@ -1,6 +1,7 @@
 """
 Main - Orchestrates all modules and manages the trading bot lifecycle
 Coordinates Discord listener, signal parser, trade manager, and Telegram controller
+Uses HTTP-based components for Termux compatibility
 """
 
 import asyncio
@@ -13,11 +14,23 @@ from dotenv import load_dotenv
 from config_manager import ConfigManager
 from error_handler import get_error_handler
 from performance_monitor import get_performance_monitor
-from exchange_connector import ExchangeConnector
-from signal_parser import SignalParser, TradeSignal
+
+# Use HTTP-based components for Termux compatibility
+try:
+    # Try to import WebSocket-based components first
+    from exchange_connector import ExchangeConnector
+    from signal_parser import SignalParser, TradeSignal
+    from discord_controller import DiscordController
+    USE_HTTP_FALLBACK = False
+except ImportError as e:
+    print(f"⚠️ WebSocket components not available ({e}), using HTTP fallback for Termux compatibility")
+    from exchange_connector_http import ExchangeConnectorHTTP as ExchangeConnector
+    from signal_parser_http import SignalParserHTTP as SignalParser, TradeSignal
+    from discord_controller_http import DiscordControllerHTTP as DiscordController
+    USE_HTTP_FALLBACK = True
+
 from trade_manager import TradeManager
 from trade_tracker import TradeTracker
-from discord_controller import DiscordController
 
 
 class TradingBot:
@@ -68,14 +81,19 @@ class TradingBot:
             
             # Initialize Discord controller (handles both commands and listening)
             with self.performance_monitor.time_operation("discord_controller_initialization"):
-                self.discord_controller = DiscordController(config)
-                # Don't start the bot yet, just create it
+                if USE_HTTP_FALLBACK:
+                    self.discord_controller = DiscordController(config)
+                    await self.discord_controller.initialize()
+                else:
+                    self.discord_controller = DiscordController(config)
+                    # Don't start the bot yet, just create it
             
-            # Setup callbacks and connections BEFORE starting Discord
+            # Setup callbacks and connections BEFORE starting Discord (WebSocket version only)
             await self._setup_callbacks()
             
-            # Now start the Discord bot with callbacks already set
-            await self.discord_controller.initialize()
+            # Now start the Discord bot with callbacks already set (WebSocket version only)
+            if not USE_HTTP_FALLBACK:
+                await self.discord_controller.initialize()
             
             # Subscribe to config changes
             self.config_manager.subscribe(self._on_config_change)
@@ -83,7 +101,8 @@ class TradingBot:
             # Setup signal handlers for graceful shutdown
             self._setup_signal_handlers()
             
-            self.error_handler.log_success("🚀 Trading Bot initialized successfully!")
+            mode_text = "HTTP (Termux Compatible)" if USE_HTTP_FALLBACK else "WebSocket (Full Features)"
+            self.error_handler.log_success(f"🚀 Trading Bot initialized successfully! Mode: {mode_text}")
             
         except Exception as e:
             self.error_handler.handle_exception(e, "bot initialization")

@@ -169,19 +169,37 @@ class ExchangeConnector:
             # Convert BTCUSDT to BTC/USDT format
             if symbol.endswith('USDT'):
                 base = symbol[:-4]  # Remove USDT
-                if is_futures:
-                    return f"{base}/USDT:USDT"
+                # Validate base currency - should be at least 2 chars and not a fragment of USDT
+                # Also check if it's a known invalid base like TUT, UST, etc.
+                invalid_bases = ['TU', 'US', 'DT', 'SDT', 'TUT', 'UST']
+                if len(base) >= 2 and base not in invalid_bases:
+                    # Additional check: make sure it's not just a fragment
+                    if len(base) >= 3 or base in ['BTC', 'ETH', 'BNB', 'ADA', 'DOT', 'SOL']:
+                        if is_futures:
+                            return f"{base}/USDT:USDT"
+                        else:
+                            return f"{base}/USDT"
+                    else:
+                        self.error_handler.log_warning(f"Suspicious base currency '{base}' from symbol '{symbol}', keeping original")
+                        return symbol
                 else:
-                    return f"{base}/USDT"
+                    # Invalid base currency, return original symbol
+                    self.error_handler.log_warning(f"Invalid base currency '{base}' extracted from symbol '{symbol}'")
+                    return symbol
             
             # Handle other quote currencies if needed
             for quote in ['BTC', 'ETH', 'BNB']:
                 if symbol.endswith(quote):
                     base = symbol[:-len(quote)]
-                    if is_futures:
-                        return f"{base}/{quote}:{quote}"
+                    # Validate base currency
+                    if len(base) >= 2:
+                        if is_futures:
+                            return f"{base}/{quote}:{quote}"
+                        else:
+                            return f"{base}/{quote}"
                     else:
-                        return f"{base}/{quote}"
+                        self.error_handler.log_warning(f"Invalid base currency '{base}' extracted from symbol '{symbol}'")
+                        return symbol
             
             # If we can't parse it, return as-is
             return symbol

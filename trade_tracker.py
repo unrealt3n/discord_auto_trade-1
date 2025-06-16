@@ -8,7 +8,11 @@ import json
 import os
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
-from exchange_connector import ExchangeConnector
+# Use HTTP fallback for Termux compatibility
+try:
+    from exchange_connector import ExchangeConnector
+except ImportError:
+    from exchange_connector_http import ExchangeConnectorHTTP as ExchangeConnector
 from config_manager import Config
 from error_handler import get_error_handler
 
