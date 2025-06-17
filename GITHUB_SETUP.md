@@ -196,7 +196,7 @@ python test_http_compatibility.py
 **Manual Verification:**
 ```bash
 python -c "
-from main_http import TradingBotHTTP
+from main import TradingBotHTTP
 print('✅ Bot can be imported')
 "
 ```

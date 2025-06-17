@@ -74,7 +74,7 @@ python test_http_compatibility.py
 ### Direct HTTP Mode:
 If you want to force HTTP mode even when other libraries are available:
 ```bash
-python main_http.py
+python main.py
 ```
 
 ## Configuration
