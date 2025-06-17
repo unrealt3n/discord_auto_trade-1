@@ -5,8 +5,8 @@
 python-dotenv>=1.0.0
 requests>=2.28.0
 
-# Optional: File operations (pure Python alternative to aiofiles)
-# aiofiles>=23.2.0  # Can be removed if not needed
+# File operations
+aiofiles>=23.2.0
 
 # Optional: Async throttling (pure Python)
 asyncio-throttle>=1.0.2
