@@ -16,3 +16,9 @@ pytest>=7.4.3
 
 # Note: All Discord, exchange, and system monitoring functionality
 # is now implemented using pure HTTP requests and built-in libraries
+
+# Incompatible with Termux - will auto-fallback to HTTP implementations if not available:
+# discord.py>=2.3.0
+# ccxt>=4.0.0
+# psutil>=5.9.0
+# python-telegram-bot>=20.0

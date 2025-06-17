@@ -308,6 +308,26 @@ class ExchangeConnectorHTTP:
         
         return symbol
     
+    def normalize_symbol(self, symbol: str, is_futures: bool = True) -> str:
+        """Convert symbol from BTCUSDT format to HTTP exchange format"""
+        try:
+            # For HTTP implementation, we keep it simple - just format the symbol
+            formatted = self.format_symbol(symbol, is_futures)
+            
+            # Validate the symbol isn't malformed
+            if formatted.endswith('USDT'):
+                base = formatted[:-4]
+                # Check if base currency is valid (at least 2 chars and not a suffix fragment)
+                if len(base) < 2 or base in ['TU', 'US', 'DT']:
+                    self.error_handler.log_warning(f"Invalid base currency '{base}' from symbol '{symbol}', using original")
+                    return symbol
+            
+            return formatted
+            
+        except Exception as e:
+            self.error_handler.log_warning(f"Failed to normalize symbol {symbol}: {e}")
+            return symbol
+    
     def calculate_quantity(self, symbol: str, price: float, position_size: float, 
                           leverage: int = 1) -> float:
         """Calculate quantity based on position size and leverage"""
