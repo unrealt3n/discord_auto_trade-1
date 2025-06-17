@@ -2,6 +2,5 @@ __pycache__
 .claude
 .env
 venv
-config.json
 positions.json
 trades.json
