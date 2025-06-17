@@ -1,0 +1,26 @@
+{
+  "mode": "demo",
+  "leverage": 5,
+  "max_futures_trade": 10,
+  "max_spot_trade": 1,
+  "max_daily_loss": 20,
+  "futures_position_size": 50,
+  "spot_position_size": 10,
+  "blacklist": [
+    "PEPEUSDT",
+    "UMAUSDT"
+  ],
+  "discord_channels": [
+    "1362283275187523627",
+    "1038975807797870622",
+    "1038975672388960339"
+  ],
+  "is_trading_enabled": true,
+  "performance_monitoring": true,
+  "cache_signals": true,
+  "min_confidence_threshold": 0.65,
+  "max_risk_reward_ratio": 3.0,
+  "authorized_users": [
+    "962721469824118784"
+  ]
+}
